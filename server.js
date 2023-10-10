@@ -30,10 +30,11 @@ const animeSchema = new mongoose.Schema({
 });
 
 const reviewSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-  },
+  // user: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: "User",
+  // },
+  user: String,
   title: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Anime",
@@ -120,7 +121,7 @@ app.post("/addReview", async (req, res) => {
     const user = await User.findOne({userEmail: email})
     console.log(user);
     const review = new Review({
-      user: user,
+      user: user.userEmail,
       title: data.animeId,
       date: data.date,
       rating: data.rating,
@@ -140,7 +141,7 @@ app.get("/anime", async (req, res) => {
 });
 
 app.get("/reviews", async (req, res) => {
-  const reviews = await Review.find({}).populate('title');
+  const reviews = await Review.find({}).populate('title').populate('user');
   res.json(reviews);
 });
 
@@ -160,6 +161,37 @@ app.get("/:id/reviews", async (req, res) => {
   res.json(reviews);
 });
 
+app.get("/review/single/:id", async (req, res) => {
+  const id = req.params.id;
+  console.log("Received request for review ID:", id);
+  
+  try {
+    const review = await Review.findById(id);
+
+    if (!review) {
+      return res.status(404).json({ error: "Review not found" });
+    }
+
+    console.log("Review:", review);
+    res.json(review);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.put("/review/single/:id", async (req, res) => {
+  Review.updateOne({"_id": req.params.id}, {$set:{'text': req.body.text}})
+  .then(() => {
+      console.log("fgdf");
+      res.sendStatus(200)
+  })
+  .catch(error => {
+      // console.error(error);
+      res.sendStatus(400)
+  })
+})
+
 app.delete("/review/:id", async (req, res) => {
   try {
     await Review.deleteOne({ _id: req.params.id });
@@ -170,21 +202,3 @@ app.delete("/review/:id", async (req, res) => {
   }
 });
 
-app.put("/review/:id", async (req, res) => {
-  try {
-    const review = await Review.findByIdAndUpdate(
-      req.params.id,
-      {
-        animeId: req.body.animeId,
-        date: req.body.date,
-        rating: req.body.rating,
-        text: req.body.text,
-      },
-      { new: true }
-    );
-    res.json(review);
-  } catch (error) {
-    console.error(error);
-    res.sendStatus(500);
-  }
-});
