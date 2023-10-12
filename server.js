@@ -30,10 +30,6 @@ const animeSchema = new mongoose.Schema({
 });
 
 const reviewSchema = new mongoose.Schema({
-  // user: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   ref: "User",
-  // },
   user: String,
   title: {
     type: mongoose.Schema.Types.ObjectId,
@@ -42,6 +38,8 @@ const reviewSchema = new mongoose.Schema({
   date: String,
   rating: String,
   text: String,
+  image: String,
+  name: String
 });
 
 const Review = mongoose.model("Review", reviewSchema);
@@ -121,13 +119,32 @@ app.post("/addReview", async (req, res) => {
     const user = await User.findOne({userEmail: email})
     console.log(user);
     const review = new Review({
+      image: data.image,
       user: user.userEmail,
+      name: data.name,
       title: data.animeId,
       date: data.date,
       rating: data.rating,
       text: data.text,
     });
     await review.save();
+    res.sendStatus(200);
+  } catch (err) {
+    console.log("ERROR MESSAGE HERE ->", err.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.post("/addAnime", async (req, res) => {
+  try {
+    const data = req.body;
+    console.log(data);
+    const anime = new Anime({
+      name: data.name,
+      imageURL: data.imageURL,
+      description: data.description
+    });
+    await anime.save();
     res.sendStatus(200);
   } catch (err) {
     console.log("ERROR MESSAGE HERE ->", err.message);
