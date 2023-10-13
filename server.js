@@ -21,6 +21,8 @@ const userSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
+  name: String,
+  img: String
 });
 
 const animeSchema = new mongoose.Schema({
@@ -98,18 +100,25 @@ app.listen(port, () => {
 app.post("/user/login", async (req, res) => {
   const now = new Date();
   if ((await User.count({ userEmail: req.body.email })) === 0) {
-    const newuser = new User({ userEmail: req.body.email, lastLogin: now });
+    const newuser = new User({ userEmail: req.body.email, name: req.body.name, img: req.body.img, lastLogin: now });
     newuser.save().then(() => {
       res.sendStatus(200);
     });
   } else {
     await User.findOneAndUpdate(
       { userEmail: req.body.email },
+      { name: req.body.name },
+      { img: req.body.img },
       { lastLogin: now }
     );
     res.sendStatus(200);
   }
 });
+
+app.get("/profiles", async (req, res) => {
+  const profiles = await User.find({});
+  res.json(profiles);
+})
 
 app.post("/addReview", async (req, res) => {
   const email = req.body.email
