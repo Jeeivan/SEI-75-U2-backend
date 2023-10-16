@@ -1,14 +1,15 @@
 import mongoose from "mongoose";
 import "dotenv/config";
-import express from "express";
+import express, { Router } from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
+import serverless from "serverless-http";
 
-const app = express();
-app.use(cors());
-app.use(bodyParser.json());
-app.use(cookieParser());
+const api = express();
+api.use(cors());
+api.use(bodyParser.json());
+api.use(cookieParser());
 
 mongoose.connect(process.env.DATABASE_COLLECTION);
 
@@ -59,6 +60,8 @@ const reviewSchema = new mongoose.Schema({
 const Review = mongoose.model("Review", reviewSchema);
 const Anime = mongoose.model("Anime", animeSchema);
 const User = mongoose.model("User", userSchema);
+
+const router = Router();
 
 async function createNewAnime(name, imageURL) {
   try {
@@ -113,11 +116,11 @@ async function addDescriptionToAnime(animeId, description) {
 }
 
 const port = process.env.PORT || 4000;
-app.listen(port, () => {
+router.listen(port, () => {
   console.log(`listening on port: ${port}`);
 });
 
-app.post("/user/login", async (req, res) => {
+router.post("/user/login", async (req, res) => {
   const now = new Date();
   if ((await User.count({ userEmail: req.body.email })) === 0) {
     const newuser = new User({
@@ -140,12 +143,12 @@ app.post("/user/login", async (req, res) => {
   }
 });
 
-app.get("/profiles", async (req, res) => {
+router.get("/profiles", async (req, res) => {
   const profiles = await User.find({});
   res.json(profiles);
 });
 
-app.post("/addReview", async (req, res) => {
+router.post("/addReview", async (req, res) => {
   const email = req.body.email;
   try {
     const data = req.body;
@@ -169,7 +172,7 @@ app.post("/addReview", async (req, res) => {
   }
 });
 
-app.post("/addAnime", async (req, res) => {
+router.post("/addAnime", async (req, res) => {
   try {
     const data = req.body;
     // console.log(data);
@@ -186,24 +189,24 @@ app.post("/addAnime", async (req, res) => {
   }
 });
 
-app.get("/anime", async (req, res) => {
+router.get("/anime", async (req, res) => {
   const animes = await Anime.find({});
   res.json(animes);
 });
 
-app.get("/reviews", async (req, res) => {
+router.get("/reviews", async (req, res) => {
   const reviews = await Review.find({}).populate("title").populate("user");
   res.json(reviews);
 });
 
-app.get("/anime/:id", async (req, res) => {
+router.get("/anime/:id", async (req, res) => {
   const id = req.params.id;
   const anime = await Anime.findById(id);
   // console.log(anime);
   res.json({ anime });
 });
 
-app.get("/:id/reviews", async (req, res) => {
+router.get("/:id/reviews", async (req, res) => {
   const id = req.params.id;
   console.log("Received request for anime ID:", id);
   const reviews = await Review.find({ title: id });
@@ -211,7 +214,7 @@ app.get("/:id/reviews", async (req, res) => {
   res.json(reviews);
 });
 
-app.get("/review/single/:id", async (req, res) => {
+router.get("/review/single/:id", async (req, res) => {
   const id = req.params.id;
   console.log("Received request for review ID:", id);
 
@@ -230,7 +233,7 @@ app.get("/review/single/:id", async (req, res) => {
   }
 });
 
-app.put("/review/single/:id", async (req, res) => {
+router.put("/review/single/:id", async (req, res) => {
   Review.updateOne({ _id: req.params.id }, { $set: { text: req.body.text } })
     .then(() => {
       res.sendStatus(200);
@@ -241,7 +244,7 @@ app.put("/review/single/:id", async (req, res) => {
     });
 });
 
-app.delete("/review/:id", async (req, res) => {
+router.delete("/review/:id", async (req, res) => {
   try {
     await Review.deleteOne({ _id: req.params.id });
     res.sendStatus(200);
@@ -250,3 +253,7 @@ app.delete("/review/:id", async (req, res) => {
     res.sendStatus(500);
   }
 });
+
+api.use("/api/", router);
+
+export const handler = serverless(api);
