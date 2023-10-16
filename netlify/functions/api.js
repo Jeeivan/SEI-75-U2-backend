@@ -115,10 +115,10 @@ async function addDescriptionToAnime(animeId, description) {
   }
 }
 
-const port = process.env.PORT || 4000;
-router.listen(port, () => {
-  console.log(`listening on port: ${port}`);
-});
+// const port = process.env.PORT || 4000;
+// router.listen(port, () => {
+//   console.log(`listening on port: ${port}`);
+// });
 
 router.post("/user/login", async (req, res) => {
   const now = new Date();
